@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'; // Make sure path is correct
 import { Player } from './player.js';
+import { Ground } from './ground.js';
 
 // --- Basic Setup ---
 
 const scene = new THREE.Scene();
 const sizes = {
     width: window.innerWidth,
-    height: window.innerHeight
+    height: window.innerHeight,
 };
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000);
 camera.position.set(0, 5, 10);
@@ -16,11 +17,11 @@ scene.add(camera);
 const canvas = document.querySelector('canvas.webgl');
 const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
-    antialias: true
+    antialias: true,
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0xADD8E6);
+renderer.setClearColor(0xadd8e6);
 
 // --- ✨ Add Lighting ✨ ---
 // Ambient light: provides a base level of light everywhere
@@ -47,10 +48,9 @@ const loader = new GLTFLoader();
 let player; // Declare player variable
 
 loader.load(
-    'public/corgi.glb', // <-- REPLACE WITH ACTUAL PATH to your Corgi model
-    (gltf) => {
+    'corgi-custom.glb',
+    gltf => {
         // Called when the model is loaded successfully
-        const corgiModel = gltf.scene; // gltf.scene is usually the root object
 
         // --- Optional: Adjust model before passing it ---
         // Example: Center the model's pivot (depends on how the model was exported)
@@ -65,18 +65,18 @@ loader.load(
         // Adjust startY based on the model's height/origin
         const modelHeight = 1; // Estimate or calculate model height
         const startY = modelHeight / 2;
-        player = new Player(scene, corgiModel, startY);
+        player = new Player(scene, gltf, startY);
 
         console.log('Corgi loaded and player created!');
 
         // Start the animation loop *after* the model is loaded
         animate();
     },
-    (xhr) => {
+    xhr => {
         // Called while loading is progressing
-        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
     },
-    (error) => {
+    error => {
         // Called if there's an error loading the model
         console.error('An error happened loading the Corgi model:', error);
         // Maybe create a fallback box player here?
@@ -89,11 +89,7 @@ loader.load(
 );
 
 // Ground Plane (Landscape)
-const groundGeometry = new THREE.PlaneGeometry(30, 30);
-const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22, side: THREE.DoubleSide });
-const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
+new Ground(scene);
 
 // Add some simple polygon obstacles/scenery
 const sphereGeometry = new THREE.SphereGeometry(0.8, 16, 16);
@@ -103,17 +99,16 @@ sphere.position.set(5, 0.8, -3);
 scene.add(sphere);
 
 const coneGeometry = new THREE.ConeGeometry(1, 2, 16);
-const coneMaterial = new THREE.MeshStandardMaterial({ color: 0xDAA520 });
+const coneMaterial = new THREE.MeshStandardMaterial({ color: 0xdaa520 });
 const cone = new THREE.Mesh(coneGeometry, coneMaterial);
 cone.position.set(-4, 1, 4);
 scene.add(cone);
-
 
 // --- Controls ---
 
 const keysPressed = {}; // Keep track of currently pressed keys (remains global for now)
 
-document.addEventListener('keydown', (event) => {
+document.addEventListener('keydown', event => {
     const key = event.key.toLowerCase();
     keysPressed[key] = true;
 
@@ -125,7 +120,7 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-document.addEventListener('keyup', (event) => {
+document.addEventListener('keyup', event => {
     keysPressed[event.key.toLowerCase()] = false;
 });
 
@@ -151,10 +146,12 @@ const animate = () => {
     lastTime = elapsedTime;
 
     // Update the player instance, passing necessary info
-    player.update(deltaTime, keysPressed);
+    player?.update(deltaTime, keysPressed);
 
-    // Make the camera look at the player's mesh position
-    camera.lookAt(player.position); // Use the getter or player.mesh.position
+    // Make the camera look at the player's mesh position and adjust its position
+    camera.position.x = player?.mesh.position.x;
+    camera.position.z = player?.mesh.position.z + 5;
+    if (player) camera.lookAt(player.position); // Use the getter or player.mesh.position
 
     // Optional camera follow logic (using player.position)
     // const cameraOffset = new THREE.Vector3(0, 5, 10);
