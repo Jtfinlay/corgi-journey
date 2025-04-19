@@ -151,6 +151,7 @@ const animate = () => {
     // Make the camera look at the player's mesh position and adjust its position
     camera.position.x = player?.mesh.position.x;
     camera.position.z = player?.mesh.position.z + 5;
+    camera.position.y = player?.mesh.position.y + 5;
     if (player) camera.lookAt(player.position); // Use the getter or player.mesh.position
 
     // Optional camera follow logic (using player.position)

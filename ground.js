@@ -1,11 +1,14 @@
 import * as THREE from 'three';
+import { createNoise2D } from 'simplex-noise';
 
 export class Ground {
     constructor(scene) {
         this.scene = scene;
         this.groundSize = 100;
         this.groundSegments = 100;
-        this.groundHeight = 1;
+        // this.groundHeight = 0.5;
+        this.noise2d = createNoise2D();
+
         this.groundGeometry = new THREE.PlaneGeometry(
             this.groundSize,
             this.groundSize,
@@ -26,23 +29,26 @@ export class Ground {
     generateTerrain() {
         const positionAttribute = this.groundGeometry.attributes.position;
         const vertex = new THREE.Vector3();
-        const peakHeight = 5; // Maximum height of the hills
-        const frequency = 0.05; // How close together the hills/valleys are (lower value = wider features)
-        const complexity = 0.08; // Adds some smaller variations
+
+        // --- Terrain Parameters ---
+        // Adjust these values to change the terrain's appearance
+        const noiseScale = 0.04; // Lower value = larger, broader features. Higher value = smaller, more frequent features.
+        const noiseHeight = 2; // Maximum height difference (amplitude) of the hills/valleys.
 
         console.log('Generating terrain...'); // Optional: log progress
 
         for (let i = 0; i < positionAttribute.count; i++) {
             vertex.fromBufferAttribute(positionAttribute, i); // Get vertex x, y, z
 
-            // Calculate height offset using sine waves (simple example)
-            // You could use more complex noise functions (like Perlin/Simplex) for more natural terrain
-            const heightOffset =
-                (Math.sin(vertex.x * frequency) * Math.cos(vertex.y * frequency) + // Base hills
-                    Math.sin(vertex.x * complexity * 5) *
-                        Math.cos(vertex.y * complexity * 5) *
-                        0.3) * // Smaller details
-                peakHeight;
+            // Calculate noise coordinates based on vertex position
+            const noiseX = vertex.x * noiseScale;
+            const noiseY = vertex.y * noiseScale;
+
+            // Sample noise at this point
+            const noiseValue = this.noise2d(noiseX, noiseY);
+
+            // Apply noise to the vertex's z-coordinate (height)
+            const heightOffset = noiseValue * noiseHeight;
 
             // Apply the height offset to the z-coordinate of the plane vertex
             // This becomes the y-coordinate in world space after rotation
